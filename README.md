@@ -14,8 +14,11 @@ npm install -g node-gyp
 ## Install DBR for Linux
 [DBR for Linux][4]
 
+## Install DBR for Mac
+[DBR for Mac][3]
+
 ## Getting Started
-1. Edit binding.gyp. Replace < DBR Installation Directory of Includes and Libs > with yours. 
+1. Edit **binding.gyp**. Replace **< DBR Installation Directory of Includes and Libs >** with yours. 
 2. Configure build:
 
     ```
