@@ -34,7 +34,7 @@ npm install -g node-gyp
     ```
     node server.js
     ```
-5. Visit **http://localhost:2015/index.htm**
+5. Visit **http://localhost:2016/index.htm**
 
     ![online barcode reader with nodejs](http://www.codepool.biz/wp-content/uploads/2016/01/node-online-barcode-reader.png)
 
