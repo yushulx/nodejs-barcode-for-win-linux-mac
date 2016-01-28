@@ -2,23 +2,38 @@
 
 The sample demonstrates how to use [Dynamsoft Barcode Reader SDK][1] and [Node.js][2] to create Web barcode reader on Windows, Linux and Mac.
 
+## Node.js Version
+[v5.5.0][0]
+
 ## Install node-gyp
 
 ```
 npm install -g node-gyp
 ```
 
-## Install DBR for Windows
-[DBR for Windows][3]
+## Windows
+Install [DBR for Windows][3], Visual Studio and Python v2.7.
 
-## Install DBR for Linux
-[DBR for Linux][4]
+## Linux
+Install [DBR for Linux][4].
 
-## Install DBR for Mac
-[DBR for Mac][3]
+## Mac
+Install [DBR for Mac][3] and [Xcode][6].
+
+Probably you will get the following error when running **node-gyp configure**:
+
+```
+error: xcode-select: error: tool 'xcodebuild' requires Xcode, but active developer directory '/Library/Developer/CommandLineTools' is a command line tools instance
+solution: 
+```
+Here is the solution from [StackOverflow][7]:
+
+```
+sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+```
 
 ## Getting Started
-1. Edit **binding.gyp**. Replace **< DBR Installation Directory of Includes and Libs >** with yours. 
+1. Edit **binding.gyp**. Replace **< DBR Installation Directory** with yours. 
 2. Configure build:
 
     ```
@@ -38,8 +53,14 @@ npm install -g node-gyp
 
     ![online barcode reader with nodejs](http://www.codepool.biz/wp-content/uploads/2016/01/node-online-barcode-reader.png)
 
+## Reference
+* [node-gyp][5]
+
+[0]:https://nodejs.org/en/download/stable/
 [1]:http://www.dynamsoft.com/Products/Dynamic-Barcode-Reader.aspx
 [2]:https://nodejs.org
 [3]:http://www.dynamsoft.com/Downloads/Dynamic-Barcode-Reader-Download.aspx
 [4]:https://www.dynamsoft.com/Downloads/DownloadLog.aspx?server=1&product=support/dbr-4.0.0-pre-alpha.tar.gz
-
+[5]:https://github.com/nodejs/node-gyp
+[6]:https://developer.apple.com/xcode/download/
+[7]:http://stackoverflow.com/questions/19605862/unable-to-use-xcodebuild-on-mavericks-with-command-line-tools-installed
