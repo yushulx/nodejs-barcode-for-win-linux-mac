@@ -1,4 +1,5 @@
 #include <node.h>
+#include <string.h>
 #include "If_DBR.h"
 #include "BarcodeFormat.h"
 #include "BarcodeStructs.h"
@@ -67,7 +68,7 @@ void DecodeFile(const FunctionCallbackInfo<Value>& args) {
 				DBR_InitLicense("B3E1E81166C5AB81F245D1F0EF130807");
 		#elif LINUX_DBR
 				printf("Linux dbr license\n");
-				DBR_InitLicense("AC4561856D63EF392F46D7454052372D");
+				DBR_InitLicense("2ED2460EB8B262E5BA9341694694976B");
 		#elif MAC_DBR
 				printf("Mac dbr license\n");
 				DBR_InitLicense("B3E1E81166C5AB819AB61611257829F6");

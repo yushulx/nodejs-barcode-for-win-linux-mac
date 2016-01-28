@@ -18,7 +18,7 @@
             {
               'destination': 'build/Release/',
               'files': [
-                'F:\Program Files (x86)\Dynamsoft\Barcode Reader 4.1\Components\C_C++\Redist\DynamsoftBarcodeReaderx64.dll'
+                '/home/xiao/Dynamsoft/BarcodeReader4.0/Redist/libDynamsoftBarcodeReaderx64.so'
               ]
             }]
           }],
