@@ -33,7 +33,7 @@ sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
 ```
 
 ## Getting Started
-1. Edit **binding.gyp**. Replace **< DBR Installation Directory** with yours. 
+1. Edit **binding.gyp**. Replace **< DBR Installation Directory >** with yours. 
 2. Configure building environment:
 
     ```
