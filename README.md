@@ -56,6 +56,9 @@ sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
 ## Reference
 * [node-gyp][5]
 
+## Blog
+[How to Build Node.js Barcode Reader on Windows, Linux and Mac][8]
+
 [0]:https://nodejs.org/en/download/stable/
 [1]:http://www.dynamsoft.com/Products/Dynamic-Barcode-Reader.aspx
 [2]:https://nodejs.org
@@ -64,3 +67,4 @@ sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
 [5]:https://github.com/nodejs/node-gyp
 [6]:https://developer.apple.com/xcode/download/
 [7]:http://stackoverflow.com/questions/19605862/unable-to-use-xcodebuild-on-mavericks-with-command-line-tools-installed
+[8]:http://www.codepool.biz/nodejs-barcode-windows-linux-mac.html
