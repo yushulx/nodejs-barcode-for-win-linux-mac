@@ -45,18 +45,11 @@
               'MAC_DBR',
             ],
             'include_dirs' : [
-                "/home/xiao/Dynamsoft/BarcodeReader4.0/Include"
+                "/Applications/Dynamsoft/Barcode\ Reader\ 4.1/Include"
             ],
             'libraries': [
-                "-lDynamsoftBarcodeReaderx64", "-L/home/xiao/Dynamsoft/BarcodeReader4.0/Redist"
-            ],
-            'copies': [
-            {
-              'destination': 'build/Release/',
-              'files': [
-                'F:\Program Files (x86)\Dynamsoft\Barcode Reader 4.1\Components\C_C++\Redist\DynamsoftBarcodeReaderx64.dll'
-              ]
-            }]
+                "-lDynamsoftBarcodeReader"
+            ]
           }]
       ]
     }
