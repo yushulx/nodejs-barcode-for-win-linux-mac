@@ -1,5 +1,5 @@
 {
-  "name": "Dynamsoft Barcode Reader",
+  "name": "DynamsoftBarcodeReader",
   "version": "1.0.0",
   "description": "Native desktop application based on Electron",
   "main": "main.js",
