@@ -10,7 +10,14 @@ A basic Electron application needs just these files:
 
 ## Getting Started
 
-1. Build [dbr.so](https://github.com/yushulx/nodejs-barcode-for-win-linux-mac).
+1. Rebuild [dbr.node/dbr.so](https://github.com/yushulx/nodejs-barcode-for-win-linux-mac):
+
+    ```
+    # check electron version
+    electron –v
+    # rebuild the native node module
+    node-gyp rebuild --target=0.36.7 --arch=x64 --dist-url=https://atom.io/download/atom-shell
+    ```
 2. Install dependencies:
 
     ```
