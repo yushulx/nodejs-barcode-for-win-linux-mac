@@ -30,3 +30,6 @@ A basic Electron application needs just these files:
     ```
 
 Learn more about Electron and its API in the [documentation](http://electron.atom.io/docs/latest).
+
+## Blog
+[How to Build Cross-platform Desktop Barcode App with Electron](http://www.codepool.biz/cross-platform-desktop-barcode-electron.html)
