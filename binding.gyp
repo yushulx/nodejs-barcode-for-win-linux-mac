@@ -27,16 +27,16 @@
               'WINDOWS_DBR',
             ],
             'include_dirs': [
-                "F:\Program Files (x86)\Dynamsoft\Barcode Reader 4.1\Components\C_C++\Include"
+                "E:\Program Files (x86)\Dynamsoft\Barcode Reader 4.3\Components\C_C++\Include"
             ],
             'libraries': [
-                "-lF:\Program Files (x86)\Dynamsoft\Barcode Reader 4.1\Components\C_C++\Lib\DBRx64.lib"
+                "-lE:\Program Files (x86)\Dynamsoft\Barcode Reader 4.3\Components\C_C++\Lib\DBRx64.lib"
             ],
             'copies': [
             {
               'destination': 'build/Release/',
               'files': [
-                'F:\Program Files (x86)\Dynamsoft\Barcode Reader 4.1\Components\C_C++\Redist\DynamsoftBarcodeReaderx64.dll'
+                'E:\Program Files (x86)\Dynamsoft\Barcode Reader 4.3\Components\C_C++\Redist\DynamsoftBarcodeReaderx64.dll'
               ]
             }]
           }],
