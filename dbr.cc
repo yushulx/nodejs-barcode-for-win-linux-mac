@@ -42,6 +42,12 @@ const char * GetFormatStr(__int64 format)
 	return "UNKNOWN";
 }
 
+typedef enum {
+	NO_BUFFER,
+	FILE_STREAM,
+	YUYV_BUFFER,	
+} BufferType;
+
 struct BarcodeWorker
 {
     uv_work_t request;              // libuv
@@ -49,10 +55,56 @@ struct BarcodeWorker
 	__int64 llFormat;				// barcode types
 	char filename[128];				// file name
 	pBarcodeResultArray pResults;	// result pointer
-	unsigned char *buffer;		    // file stream
+	unsigned char *buffer;		    
 	int size;						// file size
 	int errorCode;					// detection error code
+	int width;						// image width
+	int height; 					// image height
+	BufferType bufferType;			// buffer type
 };
+
+bool ConvertCameraGrayDataToDIBBuffer(unsigned char* psrc, int size, int width, int height, unsigned char** ppdist, int *psize)
+{
+	BITMAPINFOHEADER bitmapInfo;
+	memset(&bitmapInfo, 0, sizeof(BITMAPINFOHEADER));
+
+	bitmapInfo.biBitCount = 8;
+	bitmapInfo.biWidth = width;
+	bitmapInfo.biHeight = height;
+	bitmapInfo.biSize = sizeof(BITMAPINFOHEADER);
+
+	int iStride = ((width * 8 + 31) >> 5) << 2;
+	int iImageSize = iStride * height;
+	if (size < iImageSize)
+		return false;
+
+	bitmapInfo.biSizeImage = iImageSize;
+
+	*psize = iImageSize + bitmapInfo.biSize + 1024;
+	*ppdist = new unsigned char[*psize];
+
+	//1. copy BITMAPINFOHEADER
+	memcpy(*ppdist, &bitmapInfo, sizeof(BITMAPINFOHEADER));
+
+	//2. copy gray color map
+	char rgba[1024] = { 0 };
+	for (int i = 0; i < 256; ++i)
+	{
+		rgba[i * 4] = rgba[i * 4 + 1] = rgba[i * 4 + 2] = rgba[i * 4 + 3] = i;
+	}
+	memcpy(*ppdist + sizeof(BITMAPINFOHEADER), rgba, 1024);
+
+	//3. copy gray data (should be fliped)
+	unsigned char* srcptr = psrc + (height - 1)*width;
+	unsigned char* dstptr = *ppdist + sizeof(BITMAPINFOHEADER) + 1024;
+
+	for (int j = 0; j < height; ++j, srcptr -= width, dstptr += iStride)
+	{
+		memcpy(dstptr, srcptr, width);
+	}
+
+	return true;
+}
 
 /*
  *	uv_work_cb
@@ -71,13 +123,44 @@ static void DetectionWorking(uv_work_t *req)
 
 	// decode barcode image
 	int ret = 0;
-	if (worker->buffer) 
+	switch(worker->bufferType)
 	{
-		ret = DBR_DecodeStream(worker->buffer, worker->size, &ro, &pResults);
-	}
-	else
-	{
-		ret = DBR_DecodeFile(worker->filename, &ro, &pResults);
+		case FILE_STREAM:
+			{
+				if (worker->buffer)
+					ret = DBR_DecodeStream(worker->buffer, worker->size, &ro, &pResults);
+			}
+			break;
+		case YUYV_BUFFER:
+			{
+				if (worker->buffer)
+				{
+					unsigned char* pdibdata = NULL;
+					int dibsize = 0;
+					int width = worker->width, height = worker->height;
+					int size = width * height;
+					int index = 0;
+					unsigned char* data = new unsigned char[size];
+					// get Y from YUYV
+					for (int i = 0; i < size; i++)
+					{
+						data[i] = worker->buffer[index];
+						index += 2;
+					}
+					// gray conversion
+					ConvertCameraGrayDataToDIBBuffer(data, size, width, height, &pdibdata, &dibsize);
+					// read barcode
+					ret = DBR_DecodeBuffer(pdibdata, dibsize, &ro, &pResults);
+					// release memory
+					delete []data, data=NULL;
+					delete []pdibdata, pdibdata=NULL;
+				}
+			}
+			break;
+		default:
+			{
+				ret = DBR_DecodeFile(worker->filename, &ro, &pResults);
+			}
 	}
 	
 	if (ret)
@@ -215,6 +298,7 @@ void DecodeFileAsync(const FunctionCallbackInfo<Value>& args) {
 	worker->llFormat = llFormat;
 	worker->pResults = NULL;
 	worker->buffer = NULL;
+	worker->bufferType = NO_BUFFER;
 	
 	uv_queue_work(uv_default_loop(), &worker->request, (uv_work_cb)DetectionWorking, (uv_after_work_cb)DetectionDone);
 }
@@ -240,11 +324,41 @@ void DecodeFileStreamAsync(const FunctionCallbackInfo<Value>& args) {
 	worker->pResults = NULL;
 	worker->buffer = buffer;
 	worker->size = fileSize;
+	worker->bufferType = FILE_STREAM;
+	
+	uv_queue_work(uv_default_loop(), &worker->request, (uv_work_cb)DetectionWorking, (uv_after_work_cb)DetectionDone);
+}
+
+/*
+ *	decodeYUYVAsync(buffer, width, height, barcodeTypes, callback)
+ */
+void DecodeYUYVAsync(const FunctionCallbackInfo<Value>& args) {
+	Isolate* isolate = Isolate::GetCurrent();
+	HandleScope scope(isolate);
+
+	// get arguments
+	unsigned char* buffer = (unsigned char*) node::Buffer::Data(args[0]->ToObject()); // file stream
+	int width = args[1]->IntegerValue();	// image width
+	int height = args[2]->IntegerValue();	// image height
+	__int64 llFormat = args[3]->IntegerValue(); // barcode types
+	Local<Function> cb = Local<Function>::Cast(args[4]); // javascript callback function
+
+	// initialize BarcodeWorker
+	BarcodeWorker *worker = new BarcodeWorker;
+	worker->request.data = worker;
+	worker->callback.Reset(isolate, cb);
+	worker->llFormat = llFormat;
+	worker->pResults = NULL;
+	worker->buffer = buffer;
+	worker->width = width;
+	worker->height = height;
+	worker->bufferType = YUYV_BUFFER;
 	
 	uv_queue_work(uv_default_loop(), &worker->request, (uv_work_cb)DetectionWorking, (uv_after_work_cb)DetectionDone);
 }
 
 void Init(Handle<Object> exports) {
+	NODE_SET_METHOD(exports, "decodeYUYVAsync", DecodeYUYVAsync);
 	NODE_SET_METHOD(exports, "decodeFileStreamAsync", DecodeFileStreamAsync);
 	NODE_SET_METHOD(exports, "initLicense", InitLicense);
 	NODE_SET_METHOD(exports, "decodeFile", DecodeFile);
