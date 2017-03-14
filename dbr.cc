@@ -2,41 +2,41 @@
 #include <node_buffer.h>
 #include <string.h>
 #include <uv.h>
-#include "If_DBR.h"
-#include "BarcodeFormat.h"
-#include "BarcodeStructs.h"
-#include "ErrorCode.h"
+#include "DynamsoftBarcodeReader.h"
 
 using namespace v8;
 
+// barcode reader handler
+void* hBarcode = NULL; 
+
 // Barcode format
-const char * GetFormatStr(__int64 format)
+const char * GetFormatStr(int format)
 {
-	if (format == CODE_39)
+	if (format == BF_CODE_39)
 		return "CODE_39";
-	if (format == CODE_128)
+	if (format == BF_CODE_128)
 		return "CODE_128";
-	if (format == CODE_93)
+	if (format == BF_CODE_93)
 		return "CODE_93";
-	if (format == CODABAR)
+	if (format == BF_CODABAR)
 		return "CODABAR";
-	if (format == ITF)
+	if (format == BF_ITF)
 		return "ITF";
-	if (format == UPC_A)
+	if (format == BF_UPC_A)
 		return "UPC_A";
-	if (format == UPC_E)
+	if (format == BF_UPC_E)
 		return "UPC_E";
-	if (format == EAN_13)
+	if (format == BF_EAN_13)
 		return "EAN_13";
-	if (format == EAN_8)
+	if (format == BF_EAN_8)
 		return "EAN_8";
-	if (format == INDUSTRIAL_25)
+	if (format == BF_INDUSTRIAL_25)
 		return "INDUSTRIAL_25";
-	if (format == QR_CODE)
+	if (format == BF_QR_CODE)
 		return "QR_CODE";
-	if (format == PDF417)
+	if (format == BF_PDF417)
 		return "PDF417";
-	if (format == DATAMATRIX)
+	if (format == BF_DATAMATRIX)
 		return "DATAMATRIX";
 
 	return "UNKNOWN";
@@ -52,9 +52,9 @@ struct BarcodeWorker
 {
     uv_work_t request;              // libuv
 	Persistent<Function> callback;	// javascript callback		
-	__int64 llFormat;				// barcode types
+	int iFormat;				// barcode types
 	char filename[128];				// file name
-	pBarcodeResultArray pResults;	// result pointer
+	SBarcodeResultArray *pResults;	// result pointer
 	unsigned char *buffer;		    
 	int size;						// file size
 	int errorCode;					// detection error code
@@ -111,15 +111,19 @@ bool ConvertCameraGrayDataToDIBBuffer(unsigned char* psrc, int size, int width, 
  */
 static void DetectionWorking(uv_work_t *req)
 {
+	if (!hBarcode)
+	{
+		printf("Barcode reader handler not initialized.\n");
+		return;
+	}
 	// get the reference to BarcodeWorker
     BarcodeWorker *worker = static_cast<BarcodeWorker *>(req->data);
 
 	// initialize Dynamsoft Barcode Reader
 	int iMaxCount = 0x7FFFFFFF;
-	ReaderOptions ro = {0};
-	pBarcodeResultArray pResults = NULL;
-	ro.llBarcodeFormat = worker->llFormat;
-	ro.iMaxBarcodesNumPerPage = iMaxCount;
+	SBarcodeResultArray *pResults = NULL;
+	DBR_SetBarcodeFormats(hBarcode, worker->iFormat);
+	DBR_SetMaxBarcodesNumPerPage(hBarcode, iMaxCount);
 
 	// decode barcode image
 	int ret = 0;
@@ -128,14 +132,13 @@ static void DetectionWorking(uv_work_t *req)
 		case FILE_STREAM:
 			{
 				if (worker->buffer)
-					ret = DBR_DecodeStream(worker->buffer, worker->size, &ro, &pResults);
+					ret = DBR_DecodeStreamEx(hBarcode, worker->buffer, worker->size, &pResults);
 			}
 			break;
 		case YUYV_BUFFER:
 			{
 				if (worker->buffer)
 				{
-					unsigned char* pdibdata = NULL;
 					int dibsize = 0;
 					int width = worker->width, height = worker->height;
 					int size = width * height;
@@ -148,18 +151,17 @@ static void DetectionWorking(uv_work_t *req)
 						index += 2;
 					}
 					// gray conversion
-					ConvertCameraGrayDataToDIBBuffer(data, size, width, height, &pdibdata, &dibsize);
+					// ConvertCameraGrayDataToDIBBuffer(data, size, width, height, &pdibdata, &dibsize);
 					// read barcode
-					ret = DBR_DecodeBuffer(pdibdata, dibsize, &ro, &pResults);
+					ret = DBR_DecodeBufferEx(hBarcode, data, width, height, width, IPF_GrayScaled, &pResults);
 					// release memory
 					delete []data, data=NULL;
-					delete []pdibdata, pdibdata=NULL;
 				}
 			}
 			break;
 		default:
 			{
-				ret = DBR_DecodeFile(worker->filename, &ro, &pResults);
+				ret = DBR_DecodeFileEx(hBarcode, worker->filename, &pResults);
 			}
 	}
 	
@@ -183,11 +185,11 @@ static void DetectionDone(uv_work_t *req,int status)
     BarcodeWorker *worker = static_cast<BarcodeWorker *>(req->data);
 
 	// get barcode results
-	pBarcodeResultArray pResults = worker->pResults;
+	SBarcodeResultArray *pResults = worker->pResults;
 	int errorCode = worker->errorCode;
 	int count = pResults->iBarcodeCount;
-	pBarcodeResult* ppBarcodes = pResults->ppBarcodes;
-	pBarcodeResult tmp = NULL;
+	SBarcodeResult** ppBarcodes = pResults->ppBarcodes;
+	SBarcodeResult* tmp = NULL;
 
 	// array for storing barcode results
 	Local<Array> barcodeResults = Array::New(isolate);
@@ -197,7 +199,7 @@ static void DetectionDone(uv_work_t *req,int status)
 		tmp = ppBarcodes[i];
 
 		Local<Object> result = Object::New(isolate);
-		result->Set(String::NewFromUtf8(isolate, "format"), String::NewFromUtf8(isolate, GetFormatStr(tmp->llFormat)));
+		result->Set(String::NewFromUtf8(isolate, "format"), String::NewFromUtf8(isolate, GetFormatStr(tmp->emBarcodeFormat)));
 		result->Set(String::NewFromUtf8(isolate, "value"), String::NewFromUtf8(isolate, tmp->pBarcodeData));
 		barcodeResults->Set(Number::New(isolate, i), result);
 	}
@@ -222,59 +224,8 @@ void InitLicense(const FunctionCallbackInfo<Value>& args) {
 
 	String::Utf8Value license(args[0]->ToString());
 	char *pszLicense = *license;
-	DBR_InitLicense(pszLicense);
-}
-
-/*
- *	decodeFile(fileName, barcodeTypes, callback)
- */
-void DecodeFile(const FunctionCallbackInfo<Value>& args) {
-
-	Isolate* isolate = Isolate::GetCurrent();
-	HandleScope scope(isolate);
-
-	// get arguments
-	String::Utf8Value fileName(args[0]->ToString()); // convert v8 string to char *
-	char *pFileName = *fileName; // file name
-	__int64 llFormat = args[1]->IntegerValue();	// barcode types
-	Local<Function> cb = Local<Function>::Cast(args[2]); // javascript callback function
-
-	// initialize Dynamsoft Barcode Reader
-	int iMaxCount = 0x7FFFFFFF;
-	ReaderOptions ro = {0};
-	pBarcodeResultArray pResults = NULL;
-	ro.llBarcodeFormat = llFormat;
-	ro.iMaxBarcodesNumPerPage = iMaxCount;
-
-	// decode barcode image
-	int ret = DBR_DecodeFile(pFileName, &ro, &pResults);
-	if (ret)
-		printf("Detection error code: %d\n", ret);
-
-	int count = pResults->iBarcodeCount;
-	pBarcodeResult* ppBarcodes = pResults->ppBarcodes;
-	pBarcodeResult tmp = NULL;
-
-	// array for storing barcode results
-	Local<Array> barcodeResults = Array::New(isolate);
-
-	for (int i = 0; i < count; i++)
-	{
-		tmp = ppBarcodes[i];
-
-		Local<Object> result = Object::New(isolate);
-		result->Set(String::NewFromUtf8(isolate, "format"), String::NewFromUtf8(isolate, GetFormatStr(tmp->llFormat)));
-		result->Set(String::NewFromUtf8(isolate, "value"), String::NewFromUtf8(isolate, tmp->pBarcodeData));
-		barcodeResults->Set(Number::New(isolate, i), result);
-	}
-
-	// release memory of barcode results
-	DBR_FreeBarcodeResults(&pResults);
-
-	// run the callback
-	const unsigned argc = 1;
-	Local<Value> argv[argc] = { barcodeResults };
-	cb->Call(isolate->GetCurrentContext()->Global(), argc, argv);
+	hBarcode = DBR_CreateInstance();
+	DBR_InitLicenseEx(hBarcode, pszLicense);
 }
 
 /*
@@ -287,7 +238,7 @@ void DecodeFileAsync(const FunctionCallbackInfo<Value>& args) {
 	// get arguments
 	String::Utf8Value fileName(args[0]->ToString()); // file name
 	char *pFileName = *fileName;
-	__int64 llFormat = args[1]->IntegerValue(); // barcode types
+	int iFormat = args[1]->IntegerValue(); // barcode types
 	Local<Function> cb = Local<Function>::Cast(args[2]); // javascript callback function
 
 	// initialize BarcodeWorker
@@ -295,7 +246,7 @@ void DecodeFileAsync(const FunctionCallbackInfo<Value>& args) {
 	worker->request.data = worker;
 	strcpy(worker->filename, pFileName);
 	worker->callback.Reset(isolate, cb);
-	worker->llFormat = llFormat;
+	worker->iFormat = iFormat;
 	worker->pResults = NULL;
 	worker->buffer = NULL;
 	worker->bufferType = NO_BUFFER;
@@ -313,14 +264,14 @@ void DecodeFileStreamAsync(const FunctionCallbackInfo<Value>& args) {
 	// get arguments
 	unsigned char* buffer = (unsigned char*) node::Buffer::Data(args[0]->ToObject()); // file stream
 	int fileSize = args[1]->IntegerValue();	// file size
-	__int64 llFormat = args[2]->IntegerValue(); // barcode types
+	int iFormat = args[2]->IntegerValue(); // barcode types
 	Local<Function> cb = Local<Function>::Cast(args[3]); // javascript callback function
 
 	// initialize BarcodeWorker
 	BarcodeWorker *worker = new BarcodeWorker;
 	worker->request.data = worker;
 	worker->callback.Reset(isolate, cb);
-	worker->llFormat = llFormat;
+	worker->iFormat = iFormat;
 	worker->pResults = NULL;
 	worker->buffer = buffer;
 	worker->size = fileSize;
@@ -340,14 +291,14 @@ void DecodeYUYVAsync(const FunctionCallbackInfo<Value>& args) {
 	unsigned char* buffer = (unsigned char*) node::Buffer::Data(args[0]->ToObject()); // file stream
 	int width = args[1]->IntegerValue();	// image width
 	int height = args[2]->IntegerValue();	// image height
-	__int64 llFormat = args[3]->IntegerValue(); // barcode types
+	int iFormat = args[3]->IntegerValue(); // barcode types
 	Local<Function> cb = Local<Function>::Cast(args[4]); // javascript callback function
 
 	// initialize BarcodeWorker
 	BarcodeWorker *worker = new BarcodeWorker;
 	worker->request.data = worker;
 	worker->callback.Reset(isolate, cb);
-	worker->llFormat = llFormat;
+	worker->iFormat = iFormat;
 	worker->pResults = NULL;
 	worker->buffer = buffer;
 	worker->width = width;
@@ -361,7 +312,6 @@ void Init(Handle<Object> exports) {
 	NODE_SET_METHOD(exports, "decodeYUYVAsync", DecodeYUYVAsync);
 	NODE_SET_METHOD(exports, "decodeFileStreamAsync", DecodeFileStreamAsync);
 	NODE_SET_METHOD(exports, "initLicense", InitLicense);
-	NODE_SET_METHOD(exports, "decodeFile", DecodeFile);
 	NODE_SET_METHOD(exports, "decodeFileAsync", DecodeFileAsync);
 }
 

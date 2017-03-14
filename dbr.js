@@ -43,13 +43,40 @@ function decodeFileStreamAsync(fileName) {
     });
 }
 
+function decodeYUYVAsync(fileName, width, height) {
+    var stats = fs.statSync(fileName);
+    var fileSize = stats["size"];
+
+    fs.open(fileName, 'r', function(status, fd) {
+        if (status) {
+            console.log(status.message);
+            return;
+        }
+        var buffer = new Buffer(fileSize);
+        fs.read(fd, buffer, 0, fileSize, 0, function(err, bytesRead, data) {
+            dbr.decodeYUYVAsync(buffer, width, height, barcodeTypes,
+                function(msg) {
+                    var result = null;
+                    for (index in msg) {
+                        result = msg[index]
+                        console.log("Format: " + result['format']);
+                        console.log("Value : " + result['value']);
+                        console.log("##################");
+                    }
+                });
+        });
+    });
+}
+
 var rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
 });
 
 rl.question("Please input a barcode image path: ", function(answer) {
+    dbr.initLicense("");
     decodeFileStreamAsync(answer);
     decodeFileAsync(answer);
+    // decodeYUYVAsync(answer, 640, 480);
     rl.close();
 });
