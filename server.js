@@ -75,6 +75,8 @@ app.post('/upload', function(req, res) {
     });
 });
 
+dbr.initLicense("");
+
 var server = app.listen(2016, function() {
     var host = server.address().address;
     var port = server.address().port;
