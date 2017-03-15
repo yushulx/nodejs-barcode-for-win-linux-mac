@@ -32,6 +32,7 @@ Install [DBR for Windows][3], Visual Studio and Python v2.7.
 4. Run server:
     
     ```
+    npm install express formidable
     node server.js
     ```
 5. Visit **http://localhost:2016/index.htm**
