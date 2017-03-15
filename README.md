@@ -1,4 +1,4 @@
-# Node.js Barcode Reader for Windows, Linux & Mac
+# Node.js Barcode Reader for Windows
 
 The sample demonstrates how to use [Dynamsoft Barcode Reader SDK][1] and [Node.js][2] to create Web barcode reader on Windows.
 
