@@ -6,6 +6,9 @@
 
 using namespace v8;
 
+#define DBR_NO_MEMORY 0
+#define DBR_SUCCESS   1
+
 // barcode reader handler
 void* hBarcode = NULL; 
 
@@ -104,6 +107,33 @@ bool ConvertCameraGrayDataToDIBBuffer(unsigned char* psrc, int size, int width, 
 	}
 
 	return true;
+}
+
+/**
+ * Create DBR instance
+ */
+static int createDBR() 
+{
+    if (!hBarcode) {
+        hBarcode = DBR_CreateInstance();
+        if (!hBarcode)
+        {
+            printf("Cannot allocate memory!\n");
+            return DBR_NO_MEMORY;
+        }
+    }
+
+    return DBR_SUCCESS;
+}
+
+/**
+ * Destroy DBR instance
+ */
+static void destroyDBR()
+{
+    if (hBarcode) {
+        DBR_DestroyInstance(hBarcode);
+    }
 }
 
 /*
@@ -220,18 +250,38 @@ static void DetectionDone(uv_work_t *req,int status)
 /*
  *	initLicense(license)
  */
-void InitLicense(const FunctionCallbackInfo<Value>& args) {
+void InitLicense(const FunctionCallbackInfo<Value>& args) 
+{
+	if (!createDBR()) {return;}
 
 	String::Utf8Value license(args[0]->ToString());
 	char *pszLicense = *license;
-	hBarcode = DBR_CreateInstance();
 	DBR_InitLicenseEx(hBarcode, pszLicense);
+}
+
+/*
+ *	create()
+ */
+void Create(const FunctionCallbackInfo<Value>& args) 
+{
+	createDBR();
+}
+
+/*
+ *	destroy()
+ */
+void Destroy(const FunctionCallbackInfo<Value>& args) 
+{
+	destroyDBR();
 }
 
 /*
  *	decodeFileAsync(fileName, barcodeTypes, callback)
  */
-void DecodeFileAsync(const FunctionCallbackInfo<Value>& args) {
+void DecodeFileAsync(const FunctionCallbackInfo<Value>& args) 
+{
+	if (!createDBR()) {return;}
+
 	Isolate* isolate = Isolate::GetCurrent();
 	HandleScope scope(isolate);
 
@@ -257,7 +307,10 @@ void DecodeFileAsync(const FunctionCallbackInfo<Value>& args) {
 /*
  *	decodeFileStreamAsync(fileStream, fileSize, barcodeTypes, callback)
  */
-void DecodeFileStreamAsync(const FunctionCallbackInfo<Value>& args) {
+void DecodeFileStreamAsync(const FunctionCallbackInfo<Value>& args) 
+{
+	if (!createDBR()) {return;}
+
 	Isolate* isolate = Isolate::GetCurrent();
 	HandleScope scope(isolate);
 
@@ -284,6 +337,8 @@ void DecodeFileStreamAsync(const FunctionCallbackInfo<Value>& args) {
  *	decodeYUYVAsync(buffer, width, height, barcodeTypes, callback)
  */
 void DecodeYUYVAsync(const FunctionCallbackInfo<Value>& args) {
+	if (!createDBR()) {return;}
+
 	Isolate* isolate = Isolate::GetCurrent();
 	HandleScope scope(isolate);
 
@@ -309,6 +364,8 @@ void DecodeYUYVAsync(const FunctionCallbackInfo<Value>& args) {
 }
 
 void Init(Handle<Object> exports) {
+	NODE_SET_METHOD(exports, "create", Create);
+	NODE_SET_METHOD(exports, "destroy", Destroy);
 	NODE_SET_METHOD(exports, "decodeYUYVAsync", DecodeYUYVAsync);
 	NODE_SET_METHOD(exports, "decodeFileStreamAsync", DecodeFileStreamAsync);
 	NODE_SET_METHOD(exports, "initLicense", InitLicense);
