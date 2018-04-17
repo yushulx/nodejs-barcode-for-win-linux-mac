@@ -9,16 +9,16 @@
               'WINDOWS_DBR',
             ],
             'include_dirs': [
-                "E:\Program Files (x86)\Dynamsoft\Barcode Reader 5.0\Components\C_C++\Include"
+                "E:\\Program Files (x86)\\Dynamsoft\\Barcode Reader 6.0\\Components\\C_C++\\Include"
             ],
             'libraries': [
-                "-lE:\Program Files (x86)\Dynamsoft\Barcode Reader 5.0\Components\C_C++\Lib\DBRx64.lib"
+                "-lE:\\Program Files (x86)\\Dynamsoft\\Barcode Reader 6.0\\Components\\C_C++\\Lib\\DBRx64.lib"
             ],
             'copies': [
             {
               'destination': 'build/Release/',
               'files': [
-                'E:\Program Files (x86)\Dynamsoft\Barcode Reader 5.0\Components\C_C++\Redist\DynamsoftBarcodeReaderx64.dll'
+                'E:\\Program Files (x86)\\Dynamsoft\\Barcode Reader 6.0\\Components\\C_C++\\Redist\\x64\\DynamsoftBarcodeReaderx64.dll'
               ]
             }]
           }]

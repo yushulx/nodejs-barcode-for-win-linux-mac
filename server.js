@@ -6,11 +6,12 @@ var app = express();
 var path = require('path');
 var dbr = require('./build/Release/dbr');
 var http = require('http');
+var templateFile = path.join(process.cwd(), 'templates', 'default.settings.json');
 
 function decodeBarcode(res, fileName, barcodeType) {
     // read barcode using dbr
     dbr
-        .decodeFileAsync(fileName, barcodeType, function (msg) {
+        .decodeFileAsync(fileName, barcodeType, function(err, msg) {
             var response = 'Totol count: ' + msg.length;
             var result = null;
             for (index in msg) {
@@ -19,7 +20,7 @@ function decodeBarcode(res, fileName, barcodeType) {
                 response += result['value'] + '<p>';
             }
             res.send(response);
-        });
+        }, "CUSTOM");
 }
 
 app.use(express.static(__dirname));
@@ -78,13 +79,11 @@ app.post('/upload', function (req, res) {
 });
 
 // Please contact support@dynamsoft.com to get a valid trial or full license.
-dbr.initLicense("t0260NQAAAAGDPD614k9U/RuRW4tF1CQ0GmFstgNuhZTHo8CCMqBskFO5P10LCIAW8EgN7rrKXsfqJGR" +
-        "Hc9qtYJcwM3/tIPlczIkBPgam5x57zLzaPeTS5Qce70qAAUrUp8UTDBKwTbYq59braF1h61920DXuHuX" +
-        "YHQCybmsD/f0YPOrgHg5MmZH1TaKT7NDeJM75sR+HJ+sQxOlV8g3Aca2Jg1iLEHZnA0PWVC0TqWxP2vE" +
-        "CCEriUwZzRnKOn6wBKhcpkgbUCW6kjHpv0XPc/5+s1xWuwN0t/Pk15dz5lTelL6s5bvvWCLNpnOh4o4o" +
-        "Efz1eYi5z51T+Y6fF91chBwTlAheCIzs=");
+dbr.initLicense(
+    "t0068MgAAALdWb3T/zf0LfNzsP+T/Txkq//RCKw7jj+oeW+qggvzLYg465J27Zl7pa5q85qZS4ykzo1UeE9CaII3+y6WoFTA=");
+dbr.loadTemplates(templateFile);
 
-var server = app.listen(2017, function () {
+var server = app.listen(2018, function () {
     var host = server
         .address()
         .address;
