@@ -18,7 +18,7 @@ npm install -g node-gyp
 Install [DBR for Windows][3], Visual Studio and Python v2.7.
 
 ## Getting Started
-1. Edit **binding.gyp**. Replace **< DBR Installation Directory >** with yours. 
+1. Edit **binding.gyp**. Replace include dir and library dir with yours. 
 2. Configure building environment:
 
     ```
