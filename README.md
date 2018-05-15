@@ -42,6 +42,8 @@ Install [DBR for Windows][3], Visual Studio and Python v2.7.
 ## Reference
 * [node-gyp][5]
 
+## Blog
+[Node.js Barcode Extension with DBR 6.0](http://www.codepool.biz/node-js-barcode-extension-dbr-6-0.html)
 
 [1]:http://www.dynamsoft.com/Products/Dynamic-Barcode-Reader.aspx
 [2]:https://nodejs.org
